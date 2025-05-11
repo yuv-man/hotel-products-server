@@ -1,16 +1,20 @@
 class ReservationCache {
+    private cache: any | null;
+    private lastUpdated: number | null;
+    private readonly CACHE_DURATION: number;
+
     constructor() {
         this.cache = null;
         this.lastUpdated = null;
         this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
     }
 
-    set(data) {
+    set(data: any): void {
         this.cache = data;
         this.lastUpdated = Date.now();
     }
 
-    get() {
+    get(): any | null {
         if (!this.cache || !this.lastUpdated) {
             return null;
         }
@@ -24,7 +28,7 @@ class ReservationCache {
         return this.cache;
     }
 
-    invalidate() {
+    invalidate(): void {
         this.cache = null;
         this.lastUpdated = null;
     }

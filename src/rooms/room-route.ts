@@ -1,6 +1,6 @@
-import express from "express";
-import { getReservationSummaries } from "./products.service.js";
-import { reservationCache } from './cache.js';
+import express, { Request, Response, NextFunction } from "express";
+import { getReservationSummaries, getProductsByReservationUuid } from "./products.service";
+import { reservationCache } from './cache';
 
 const router = express.Router();
 const BASE_PATH = "/api/reservations";
@@ -8,13 +8,13 @@ const BASE_PATH = "/api/reservations";
 router
   .route(BASE_PATH)
   // find all
-  .get(async (req, res, next) => {
+  .get(async (_req: Request, res: Response, _next: NextFunction) => {
     const reservationSummaries = await getReservationSummaries();
     res.send(reservationSummaries);
   });
 
 // Add cache-clearing endpoint as a separate route
-router.post(`${BASE_PATH}/clear-cache`, (req, res) => {
+router.post(`${BASE_PATH}/clear-cache`, (_req: Request, res: Response) => {
   reservationCache.invalidate();
   res.sendStatus(200);
 });
@@ -22,8 +22,8 @@ router.post(`${BASE_PATH}/clear-cache`, (req, res) => {
 router
   .route(`${BASE_PATH}/:id`)
   // get one
-  .get((req, res, next) => {
-    const reservationUuid = req.params.id;
+  .get((_req: Request, res: Response, _next: NextFunction) => {
+    const reservationUuid = _req.params.id;
     const products = getProductsByReservationUuid(reservationUuid);
     res.send(products);
   })

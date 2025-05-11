@@ -1,18 +1,15 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { ProductAssignment, ProductCharge, ReservationProduct, ReservationSummary } from '../types';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const productAssignmentsPath = path.join(__dirname, '../db/product_assignment.json');
-const productChargesPath = path.join(__dirname, '../db/product_charges.json');
+const productAssignmentsPath: string = path.join(__dirname, '../db/product_assignment.json');
+const productChargesPath: string = path.join(__dirname, '../db/product_charges.json');
 
 /**
  * Asynchronously reads the product assignments data from the JSON file.
  * @returns {Promise<Array>} A promise that resolves to the array of product assignments.
  */
-async function readProductAssignments() {
+async function readProductAssignments(): Promise<ProductAssignment[]> {
     try {
         const data = await fs.readFile(productAssignmentsPath, 'utf8');
         return JSON.parse(data);
@@ -26,7 +23,7 @@ async function readProductAssignments() {
  * Asynchronously reads the product charges data from the JSON file.
  * @returns {Promise<Array>} A promise that resolves to the array of product charges.
  */
-async function readProductCharges() {
+async function readProductCharges(): Promise<ProductCharge[]> {
     try {
         const data = await fs.readFile(productChargesPath, 'utf8');
         return JSON.parse(data);
@@ -41,20 +38,20 @@ async function readProductCharges() {
  * @param {string} reservationUuid - The reservation UUID to search for
  * @returns {Promise<Array>} A promise that resolves to the array of product assignments matching the reservation UUID.
  */
-async function getProductsByReservationUuid(reservationUuid) {
+export async function getProductsByReservationUuid(reservationUuid: string): Promise<ReservationProduct[]> {
     const productAssignments = await readProductAssignments();
     const productCharges = await readProductCharges();
     const products = productAssignments.filter(
         assignment => assignment.reservation_uuid === reservationUuid
     );
-    const reservationProducts = products.forEach(product => {
-        const productCharge = productCharges.find(charge => charge.special_product_assignment_id === product.id );
+    const reservationProducts = products.map(product => {
+        const productCharge = productCharges.find(charge => charge.special_product_assignment_id === product.id);
         return {
             id: product.id,
             name: product.name,
             amount: productCharge?.amount || 0,
-            active: productCharge?.active,
-        }
+            active: productCharge?.active ?? false,
+        };
     });
     return reservationProducts;
 }
@@ -63,7 +60,7 @@ async function getProductsByReservationUuid(reservationUuid) {
  * Gets a summary of reservations with their product assignments and charges
  * @returns {Promise<Array>} Array of reservation summaries with charge information
  */
-async function getReservationSummaries() {
+export async function getReservationSummaries(): Promise<ReservationSummary[]> {
     try {
         // Fetch data in parallel for better performance
         const [productAssignments, productCharges] = await Promise.all([
@@ -75,7 +72,7 @@ async function getReservationSummaries() {
         const reservationProductMap = new Map();
         
         // Create a lookup map for product charges to avoid repeated find() operations
-        const chargesMap = productCharges.reduce((map, charge) => {
+        const chargesMap: Record<number, ProductCharge> = productCharges.reduce((map: Record<number, ProductCharge>, charge) => {
             map[charge.special_product_assignment_id] = charge;
             return map;
         }, {});
@@ -128,8 +125,3 @@ async function getReservationSummaries() {
         throw error; // Re-throw to allow calling code to handle the error
     }
 }
-
-export {
-    getProductsByReservationUuid,
-    getReservationSummaries,
-};
